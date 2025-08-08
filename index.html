@@ -2208,7 +2208,7 @@
         } else {
             zombie.position.set(
                 (Math.random() - 0.5) * 80,
-                terrain.position.y, // Posizionato sopra il terreno
+                terrain.position.y + 1.75, // Posizionato sopra il terreno
                 (Math.random() - 0.5) * 80
             );
         }
@@ -2325,7 +2325,7 @@
             zombie.mesh.children[5].rotation.x = Math.sin(zombie.animation.legMovement.right + Math.PI) * 0.3;
         } else if (zombie.mesh.userData.isKamikazeBunny) {
             // Simple hopping animation for kamikaze bunnies
-            zombie.mesh.position.y = terrain.position.y + 0.8 + Math.sin(clock.elapsedTime * 8) * 0.2;
+            zombie.mesh.position.y = terrain.position.y + Math.abs(Math.sin(clock.elapsedTime * 8)) * 0.4;
         }
       });
     }
