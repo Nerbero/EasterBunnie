@@ -3430,21 +3430,8 @@
 
         controls.unlock();
 
-        // Parent camera to the cockpit group
-        const cockpitGroup = deloreanGroup.userData.cockpitGroup;
-        if (cockpitGroup) {
-            cockpitGroup.add(camera);
-            // Position camera for an interior view
-            // La telecamera è posizionata per una visuale in prima persona dal sedile del guidatore
-            camera.position.set(0, 0.2, 0.7); // Relative to cockpitGroup (driver's seat)
-            camera.rotation.set(0, 0, 0); // Reset camera rotation relative to cockpit
-            camera.lookAt(new THREE.Vector3(0, 0.2, -10)); // Look forward from driver's seat
-        } else {
-            // Fallback if cockpitGroup is not found (shouldn't happen)
-            deloreanGroup.add(camera);
-            camera.position.set(0, 5, 10);
-            camera.lookAt(new THREE.Vector3(0, 2, 0));
-        }
+        // Camera is now a chase camera, so we don't parent it to the vehicle.
+        // The animate loop will handle the camera position and rotation.
 
         // Show steering wheel and hands
         if (deloreanGroup.userData.steeringWheel) deloreanGroup.userData.steeringWheel.visible = true;
@@ -4079,13 +4066,16 @@
 
             // Smooth acceleration/deceleration
             const targetSpeed = deloreanMoveDirection.z * currentDeloreanSpeed;
-            movement.deloreanCurrentSpeed += (targetSpeed - movement.deloreanCurrentSpeed) * 0.1;
+            movement.deloreanCurrentSpeed += (targetSpeed - movement.deloreanCurrentSpeed) * 0.03;
 
             // La DeLorean si muove nella sua direzione "in avanti" (asse Z locale)
             deloreanGroup.translateZ(movement.deloreanCurrentSpeed * delta);
 
-            if (movement.deloreanTurnLeft) deloreanGroup.rotation.y += gameState.deloreanRotationSpeed;
-            if (movement.deloreanTurnRight) deloreanGroup.rotation.y -= gameState.deloreanRotationSpeed;
+            if (movement.deloreanCurrentSpeed !== 0) {
+                const rotationAmount = gameState.deloreanRotationSpeed * 200 * delta * (movement.deloreanCurrentSpeed / gameState.deloreanSpeed);
+                if (movement.deloreanTurnLeft) deloreanGroup.rotation.y += rotationAmount;
+                if (movement.deloreanTurnRight) deloreanGroup.rotation.y -= rotationAmount;
+            }
 
             deloreanGroup.position.y = terrain.position.y + 2.5; // Mantiene la DeLorean sul terreno
 
@@ -4108,6 +4098,19 @@
                     gameOver(); // Game over if DeLorean is vulnerable for too long
                 }
             }
+
+            // Third-person chase camera
+            const idealOffset = new THREE.Vector3(0, 5, 15); // Increased distance for a better view
+            const idealLookat = new THREE.Vector3(0, 2, 0);
+
+            const cameraOffset = idealOffset.clone().applyQuaternion(deloreanGroup.quaternion);
+            const desiredCameraPosition = deloreanGroup.position.clone().add(cameraOffset);
+
+            // Use a smaller lerp factor for smoother camera movement
+            camera.position.lerp(desiredCameraPosition, 0.05);
+
+            const lookAtPoint = deloreanGroup.position.clone().add(idealLookat.clone().applyQuaternion(deloreanGroup.quaternion));
+            camera.lookAt(lookAtPoint);
 
             updateDeLoreanDashboardUI();
         }
