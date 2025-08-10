@@ -1802,42 +1802,93 @@
     function createSnowParticles() {
         const geometry = new THREE.BufferGeometry();
         const vertices = [];
-        for (let i = 0; i < 20000; i++) {
-            const x = Math.random() * 1000 - 500;
-            const y = Math.random() * 500 + 100;
-            const z = Math.random() * 1000 - 500;
-            vertices.push(x, y, z);
+        const sizes = [];
+
+        for (let i = 0; i < 5000; i++) {
+            vertices.push(
+                Math.random() * 2000 - 1000,
+                Math.random() * 1000,
+                Math.random() * 2000 - 1000
+            );
+            sizes.push(Math.random() * 1.5 + 0.5);
         }
+
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
 
         const material = new THREE.PointsMaterial({
             color: 0xffffff,
-            size: 0.8,
+            size: 0.5,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.8,
+            map: createSnowflakeTexture(),
+            blending: THREE.AdditiveBlending,
+            depthTest: false
         });
+
         snowParticles = new THREE.Points(geometry, material);
         snowParticles.visible = false;
         scene.add(snowParticles);
     }
 
+    function createSnowflakeTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+
+        ctx.beginPath();
+        ctx.arc(16, 16, 15, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.fill();
+
+        for (let i = 0; i < 6; i++) {
+            ctx.beginPath();
+            ctx.moveTo(16, 16);
+            ctx.lineTo(16 + Math.cos(i * Math.PI/3) * 16, 16 + Math.sin(i * Math.PI/3) * 16);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.stroke();
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        return texture;
+    }
+
     function createSandParticles() {
         const geometry = new THREE.BufferGeometry();
         const vertices = [];
-        for (let i = 0; i < 15000; i++) {
-            const x = Math.random() * 1000 - 500;
-            const y = Math.random() * 200 + 50;
-            const z = Math.random() * 1000 - 500;
-            vertices.push(x, y, z);
+        const colors = [];
+
+        const sandColors = [0xd2b48c, 0xc2b280, 0xe1c16e, 0xf5d992];
+
+        for (let i = 0; i < 10000; i++) {
+            vertices.push(
+                Math.random() * 2000 - 1000,
+                Math.random() * 300,
+                Math.random() * 2000 - 1000
+            );
+
+            const color = sandColors[Math.floor(Math.random() * sandColors.length)];
+            colors.push(
+                (color >> 16 & 255) / 255,
+                (color >> 8 & 255) / 255,
+                (color & 255) / 255
+            );
         }
+
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
         const material = new THREE.PointsMaterial({
-            color: 0xd2b48c,
             size: 0.3,
+            vertexColors: true,
             transparent: true,
-            opacity: 0.7
+            opacity: 0.9,
+            sizeAttenuation: true,
+            blending: THREE.AdditiveBlending
         });
+
         sandParticles = new THREE.Points(geometry, material);
         sandParticles.visible = false;
         scene.add(sandParticles);
@@ -2116,160 +2167,246 @@
       });
     }
     
+    // Funzioni helper per creare diversi tipi di zombie
+    function createKamikazeBunny() {
+        const group = new THREE.Group();
+
+        // Corpo
+        const bodyGeometry = new THREE.SphereGeometry(0.8, 16, 16);
+        const bodyMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            emissive: 0xff0000,
+            emissiveIntensity: 0.3
+        });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        group.add(body);
+
+        // Occhi
+        const eyeGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+        const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+        leftEye.position.set(0.3, 0.2, 0.7);
+        group.add(leftEye);
+
+        const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+        rightEye.position.set(-0.3, 0.2, 0.7);
+        group.add(rightEye);
+
+        // Orecchie
+        const earGeometry = new THREE.ConeGeometry(0.2, 0.8, 8);
+        const earMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const leftEar = new THREE.Mesh(earGeometry, earMaterial);
+        leftEar.position.set(0.4, 0.8, 0);
+        leftEar.rotation.z = -0.3;
+        group.add(leftEar);
+
+        const rightEar = new THREE.Mesh(earGeometry, earMaterial);
+        rightEar.position.set(-0.4, 0.8, 0);
+        rightEar.rotation.z = 0.3;
+        group.add(rightEar);
+
+        // Configurazione speciale
+        group.userData.isKamikazeBunny = true;
+        group.userData.explosionRadius = 5;
+        group.userData.explosionDamage = 50;
+
+        return group;
+    }
+
+    function createBasicZombie() {
+        const bodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 8);
+        const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x990000 });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.position.y = 0.75;
+
+        const headGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+        const headMaterial = new THREE.MeshLambertMaterial({ color: 0x880000 });
+        const head = new THREE.Mesh(headGeometry, headMaterial);
+        head.position.y = 1.5;
+
+        const armGeometry = new THREE.BoxGeometry(0.3, 1, 0.3);
+        const armMaterial = new THREE.MeshLambertMaterial({ color: 0xaa0000 });
+
+        const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+        leftArm.position.set(0.6, 0.5, 0);
+
+        const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+        rightArm.position.set(-0.6, 0.5, 0);
+
+        const legGeometry = new THREE.BoxGeometry(0.3, 1, 0.3);
+        const legMaterial = new THREE.MeshLambertMaterial({ color: 0x770000 });
+
+        const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+        leftLeg.position.set(0.25, -1.25, 0);
+
+        const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+        rightLeg.position.set(-0.25, -1.25, 0);
+
+        const zombie = new THREE.Group();
+        zombie.add(body);
+        zombie.add(head);
+        zombie.add(leftArm);
+        zombie.add(rightArm);
+        zombie.add(leftLeg);
+        zombie.add(rightLeg);
+
+        return zombie;
+    }
+
+    function createLightningZombie() {
+        // Based on createBasicZombie but with different materials and scale
+        const bodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 8);
+        const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.position.y = 0.75;
+
+        const headGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+        const headMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+        const head = new THREE.Mesh(headGeometry, headMaterial);
+        head.position.y = 1.5;
+
+        const armGeometry = new THREE.BoxGeometry(0.3, 1, 0.3);
+        const armMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+
+        const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+        leftArm.position.set(0.6, 0.5, 0);
+
+        const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+        rightArm.position.set(-0.6, 0.5, 0);
+
+        const legGeometry = new THREE.BoxGeometry(0.3, 1, 0.3);
+        const legMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+
+        const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+        leftLeg.position.set(0.25, -1.25, 0);
+
+        const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+        rightLeg.position.set(-0.25, -1.25, 0);
+
+        const zombie = new THREE.Group();
+        zombie.add(body);
+        zombie.add(head);
+        zombie.add(leftArm);
+        zombie.add(rightArm);
+        zombie.add(leftLeg);
+        zombie.add(rightLeg);
+
+        zombie.userData.isLightningZombie = true;
+
+        const healthBarGeometry = new THREE.PlaneGeometry(1, 0.1);
+        const healthBarMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const healthBarMesh = new THREE.Mesh(healthBarGeometry, healthBarMaterial);
+        healthBarMesh.position.set(0, 2.5, 0);
+        zombie.add(healthBarMesh);
+        zombie.userData.healthBar = healthBarMesh;
+
+        return zombie;
+    }
+
+    function createRockZombie() {
+        const zombie = createBasicZombie();
+
+        zombie.userData.isRockSpawned = true;
+        const mouthGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+        const mouthMaterial = new THREE.MeshBasicMaterial({ color: 0x000088 });
+        const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
+        mouth.position.set(0, 0.5, 0.5);
+        zombie.children[1].add(mouth); // Add to head
+        zombie.userData.mouthMesh = mouth;
+        zombie.userData.canShootElectricity = true;
+        zombie.userData.electricityCooldown = 3 + Math.random() * 2;
+        zombie.userData.electricityDamage = 15;
+
+        return zombie;
+    }
+
     function createZombies(count, isLightningZombie = false, position = null, isRockSpawned = false, isKamikazeBunny = false) {
-      for (let i = 0; i < count; i++) {
-        let zombie;
-        let health;
-        let originalSpeed;
+        for (let i = 0; i < count; i++) {
+            let zombie;
+            let health;
+            let originalSpeed;
+            
+            if (isKamikazeBunny) {
+                // Implementazione Bunny Kamikaze
+                zombie = createKamikazeBunny();
+                originalSpeed = 4.0;
+                health = 10;
+            } else if (isLightningZombie) {
+                // Implementazione Lightning Zombie
+                zombie = createLightningZombie();
+                originalSpeed = 3.0;
+                health = 500;
+            } else if (isRockSpawned) {
+                // Implementazione Rock Zombie
+                zombie = createRockZombie();
+                originalSpeed = 1.5;
+                health = 30;
+            } else {
+                // Zombie normale
+                zombie = createBasicZombie();
+                originalSpeed = 1.2;
+                health = 20 + gameState.level * 5;
+            }
+            
+            // Posizionamento
+            if (position) {
+                zombie.position.copy(position);
+                zombie.position.x += (Math.random() - 0.5) * 2;
+                zombie.position.z += (Math.random() - 0.5) * 2;
+            } else {
+                zombie.position.set(
+                    (Math.random() - 0.5) * 80,
+                    terrain.position.y,
+                    (Math.random() - 0.5) * 80
+                );
+            }
+            
+            // Configurazione utente
+            zombie.userData.isZombie = true;
+            zombie.userData.originalSpeed = originalSpeed;
+            zombie.userData.zombieId = zombie.uuid;
+            zombie.userData.chasingPlayer = false;
+            zombie.userData.chaseTimer = 0;
+            zombie.userData.maxHealth = health;
 
-        if (isKamikazeBunny) {
-            // Kamikaze Bunny
-            const bodyGeometry = new THREE.SphereGeometry(0.8, 16, 16);
-            bodyGeometry.applyMatrix4(new THREE.Matrix4().makeScale(1.0, 0.8, 1.0));
-            const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.position.y = 0.8;
+            if (isLightningZombie) {
+                zombie.scale.set(5, 5, 5);
+            }
 
-            const earGeometry = new THREE.BoxGeometry(0.2, 1.5, 0.1);
-            const earMaterial = new THREE.MeshLambertMaterial({ color: 0xcccccc });
-            const ear1 = new THREE.Mesh(earGeometry, earMaterial);
-            ear1.position.set(0.3, 1.5, 0);
-            ear1.rotation.z = Math.PI / 8;
-            const ear2 = new THREE.Mesh(earGeometry, earMaterial);
-            ear2.position.set(-0.3, 1.5, 0);
-            ear2.rotation.z = -Math.PI / 8;
+            scene.add(zombie);
 
-            const eyeGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-            const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-            const eye1 = new THREE.Mesh(eyeGeometry, eyeMaterial);
-            eye1.position.set(0.3, 0.9, 0.7);
-            const eye2 = new THREE.Mesh(eyeGeometry, eyeMaterial);
-            eye2.position.set(-0.3, 0.9, 0.7);
-
-            zombie = new THREE.Group();
-            zombie.add(body);
-            zombie.add(ear1);
-            zombie.add(ear2);
-            zombie.add(eye1);
-            zombie.add(eye2);
-
-            zombie.userData.isKamikazeBunny = true;
-            originalSpeed = 4.0; // Faster
-            health = 10; // Low health
-            zombie.userData.explosionRadius = 5;
-            zombie.userData.explosionDamage = 50;
-            zombie.userData.attackCooldown = 0.5; // Shorter cooldown for explosion check
-
-        } else {
-            const bodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 8);
-            const bodyMaterial = new THREE.MeshLambertMaterial({ color: isLightningZombie ? 0x000000 : 0x990000 });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.position.y = 0.75;
-            
-            const headGeometry = new THREE.SphereGeometry(0.5, 8, 8);
-            const headMaterial = new THREE.MeshLambertMaterial({ color: isLightningZombie ? 0x000000 : 0x880000 });
-            const head = new THREE.Mesh(headGeometry, headMaterial);
-            head.position.y = 1.5;
-            
-            const armGeometry = new THREE.BoxGeometry(0.3, 1, 0.3);
-            const armMaterial = new THREE.MeshLambertMaterial({ color: isLightningZombie ? 0x000000 : 0xaa0000 });
-            
-            const leftArm = new THREE.Mesh(armGeometry, armMaterial);
-            leftArm.position.set(0.6, 0.5, 0);
-            
-            const rightArm = new THREE.Mesh(armGeometry, armMaterial);
-            rightArm.position.set(-0.6, 0.5, 0);
-            
-            const legGeometry = new THREE.BoxGeometry(0.3, 1, 0.3);
-            const legMaterial = new THREE.MeshLambertMaterial({ color: isLightningZombie ? 0x000000 : 0x770000 });
-            
-            const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
-            leftLeg.position.set(0.25, -1.25, 0);
-            
-            const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
-            rightLeg.position.set(-0.25, -1.25, 0);
-            
-            zombie = new THREE.Group();
-            zombie.add(body);
-            zombie.add(head);
-            zombie.add(leftArm);
-            zombie.add(rightArm);
-            zombie.add(leftLeg);
-            zombie.add(rightLeg);
-            
-            originalSpeed = 1.2;
-            health = 2 + gameState.level;
+            // TODO: The user's request included a ZombieStateMachine.
+            // The code for the ZombieStateMachine class was not provided.
+            // I'm keeping the original animation logic to avoid breaking the game.
+            // The user can replace this with the state machine when it's available.
+            //
+            // Example from user request:
+            // gameState.zombies.push({
+            //     mesh: zombie,
+            //     health: health,
+            //     attackCooldown: 0,
+            //     stateMachine: new ZombieStateMachine(zombie)
+            // });
+            if (!isKamikazeBunny) {
+                const armMovement = { left: 0, right: 0, direction: 1 };
+                const legMovement = { left: 0, right: 0, direction: 1 };
+                gameState.zombies.push({
+                    mesh: zombie,
+                    health: health,
+                    attackCooldown: 0,
+                    animation: { armMovement, legMovement }
+                });
+            } else {
+                gameState.zombies.push({
+                    mesh: zombie,
+                    health: health,
+                    attackCooldown: 0.5,
+                    animation: null
+                });
+            }
         }
-        
-        if (position) {
-            zombie.position.copy(position);
-            zombie.position.x += (Math.random() - 0.5) * 2;
-            zombie.position.z += (Math.random() - 0.5) * 2;
-        } else {
-            zombie.position.set(
-                (Math.random() - 0.5) * 80,
-                terrain.position.y, // Posizionato sopra il terreno
-                (Math.random() - 0.5) * 80
-            );
-        }
-        
-
-        if (isLightningZombie) {
-            zombie.scale.set(5, 5, 5);
-            zombie.userData.isLightningZombie = true;
-            originalSpeed = 1.2 * 2.5;
-            health = 500;
-
-            const healthBarGeometry = new THREE.PlaneGeometry(1, 0.1);
-            const healthBarMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            const healthBarMesh = new THREE.Mesh(healthBarGeometry, healthBarMaterial);
-            healthBarMesh.position.set(0, 2.5, 0);
-            zombie.add(healthBarMesh);
-            zombie.userData.healthBar = healthBarMesh;
-        }
-
-        if (isRockSpawned) {
-            zombie.userData.isRockSpawned = true;
-            const mouthGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-            const mouthMaterial = new THREE.MeshBasicMaterial({ color: 0x000088 });
-            const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
-            mouth.position.set(0, 0.5, 0.5);
-            zombie.children[1].add(mouth); // Assuming head is the second child for normal zombies
-            zombie.userData.mouthMesh = mouth;
-            zombie.userData.canShootElectricity = true;
-            zombie.userData.electricityCooldown = 3 + Math.random() * 2;
-            zombie.userData.electricityDamage = 15;
-        }
-        
-        scene.add(zombie);
-
-        zombie.userData.isZombie = true;
-        zombie.userData.zombieId = zombie.uuid;
-        zombie.userData.chasingPlayer = false;
-        zombie.userData.chaseTimer = 0;
-        zombie.userData.originalSpeed = originalSpeed;
-        zombie.userData.maxHealth = health;
-        
-        if (!isKamikazeBunny) { // Only animate normal zombies
-            const armMovement = { left: 0, right: 0, direction: 1 };
-            const legMovement = { left: 0, right: 0, direction: 1 };
-            gameState.zombies.push({
-                mesh: zombie,
-                health: health,
-                attackCooldown: 0,
-                animation: { armMovement, legMovement }
-            });
-        } else {
-            gameState.zombies.push({
-                mesh: zombie,
-                health: health,
-                attackCooldown: 0.5, // For kamikaze, this is the check interval
-                animation: null // No arm/leg animation for bunnies
-            });
-        }
-      }
-      updateAllInteractableMeshes();
-      updateZombieCounter();
+        updateAllInteractableMeshes();
+        updateZombieCounter();
     }
     
     function updateAllInteractableMeshes() {
@@ -2504,22 +2641,70 @@
     }
 
     function toggleLighthouse() {
-        if (gameState.lighthouseMesh) {
-            const lighthouse = gameState.lighthouseMesh;
-            lighthouse.userData.isActive = !lighthouse.userData.isActive;
-            lighthouse.userData.beaconLight.visible = lighthouse.userData.isActive;
-            lighthouse.userData.beaconLight.intensity = lighthouse.userData.isActive ? 5.0 : 0;
-            showMessage(lighthouse.userData.isActive ? "FARO ATTIVATO!" : "FARO DISATTIVATO!", 2000);
+        if (!gameState.lighthouseMesh) return;
 
-            if (lighthouse.userData.isActive) {
-                // Clear nearby zombies
-                gameState.zombies.forEach(zombie => {
-                    if (zombie.mesh.position.distanceTo(lighthouse.position) < 100) { // Clear zombies within 100 units
-                        zombieHit(zombie, zombie.health); // Instantly destroy
-                    }
-                });
+        const lighthouse = gameState.lighthouseMesh;
+        lighthouse.userData.isActive = !lighthouse.userData.isActive;
+
+        // Luce principale
+        lighthouse.userData.beaconLight.visible = lighthouse.userData.isActive;
+        lighthouse.userData.beaconLight.intensity = lighthouse.userData.isActive ? 10.0 : 0;
+
+        // Effetto luce rotante
+        if (lighthouse.userData.isActive) {
+            if (!lighthouse.userData.rotationInterval) {
+                let angle = 0;
+                lighthouse.userData.rotationInterval = setInterval(() => {
+                    angle += 0.05;
+                    const x = Math.cos(angle) * 100;
+                    const z = Math.sin(angle) * 100;
+                    lighthouse.userData.beaconLight.target.position.set(x, 0, z);
+                }, 50);
+            }
+        } else {
+            clearInterval(lighthouse.userData.rotationInterval);
+            lighthouse.userData.rotationInterval = null;
+        }
+
+        // Effetto particelle
+        if (lighthouse.userData.isActive) {
+            createLightBeam(lighthouse.position);
+        } else {
+            if (lighthouse.userData.lightBeam) {
+                scene.remove(lighthouse.userData.lightBeam);
+                lighthouse.userData.lightBeam = null;
             }
         }
+
+        // Gameplay effect from original function
+        if (lighthouse.userData.isActive) {
+            // Clear nearby zombies
+            gameState.zombies.forEach(zombie => {
+                if (zombie.mesh.position.distanceTo(lighthouse.position) < 100) { // Clear zombies within 100 units
+                    zombieHit(zombie, zombie.health); // Instantly destroy
+                }
+            });
+        }
+
+        showMessage(lighthouse.userData.isActive ? "FARO ATTIVATO!" : "FARO DISATTIVATO!", 2000);
+    }
+
+    function createLightBeam(position) {
+        const geometry = new THREE.CylinderGeometry(3, 10, 200, 32);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0xffff00,
+            transparent: true,
+            opacity: 0.3,
+            blending: THREE.AdditiveBlending
+        });
+
+        const beam = new THREE.Mesh(geometry, material);
+        beam.position.copy(position);
+        beam.position.y += 100;
+        beam.rotation.x = Math.PI / 2;
+
+        scene.add(beam);
+        gameState.lighthouseMesh.userData.lightBeam = beam;
     }
 
     function updateUIVisibility() {
@@ -2864,39 +3049,57 @@
         
         timeDisplayTime.textContent = `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
         
-        let r, g, b;
-        if (time >= 6 && time < 18) {
-            // Day time colors
-            r = 0.1 + 0.5 * (1 - Math.abs(12 - time) / 6);
-            g = 0.2 + 0.4 * (1 - Math.abs(12 - time) / 6);
-            b = 0.3 + 0.3 * (1 - Math.abs(12 - time) / 6);
-            timeDisplayLabel.textContent = 'GIORNO SOLEGGIATO';
-        } else {
-            // Night time colors - changed to light gray
-            r = 0.5; // Gray value
-            g = 0.5; // Gray value
-            b = 0.5; // Gray value
-            timeDisplayLabel.textContent = 'NOTTE';
-        }
-        scene.background.setRGB(r, g, b);
+        // Calcola angolo sole/luna
+        const sunAngle = (time / 24) * Math.PI * 2 - Math.PI / 2;
+        const sunDistance = 200;
 
-        const angle = (time / 24) * Math.PI * 2 - Math.PI / 2;
+        // Posizione luce direzionale
         directionalLight.position.set(
-            Math.cos(angle) * 200,
-            Math.sin(angle) * 200,
+            Math.cos(sunAngle) * sunDistance,
+            Math.sin(sunAngle) * sunDistance,
             0
         );
 
-        if (time > 5 && time < 19) {
-            directionalLight.intensity = 0.8;
-            directionalLight.color.set(0xffffff);
-        } else if (time >= 19 || time < 5) {
-            directionalLight.intensity = 0.2;
-            directionalLight.color.set(0x88aaff);
-        } else {
-            directionalLight.intensity = 0.6;
-            directionalLight.color.set(0xffaa00);
+        // Colori e intensità basati sull'ora
+        if (hour >= 5 && hour < 8) { // Alba
+            const factor = (hour - 5 + minute/60) / 3;
+            directionalLight.intensity = 0.5 + factor * 0.3;
+            directionalLight.color.setHSL(0.1, 1, 0.6 + factor * 0.2);
+            ambientLight.intensity = 0.3 + factor * 0.2;
+            ambientLight.color.setHSL(0.1, 0.5, 0.4 + factor * 0.3);
+            scene.background.setHSL(0.6, 0.5, 0.2 + factor * 0.3);
+            timeDisplayLabel.textContent = 'ALBA';
         }
+        else if (hour >= 8 && hour < 17) { // Giorno
+            const factor = Math.abs(12.5 - time) / 4.5;
+            directionalLight.intensity = 0.8 - factor * 0.1;
+            directionalLight.color.setHSL(0.1, 0.8 - factor * 0.3, 0.9 - factor * 0.1);
+            ambientLight.intensity = 0.5 - factor * 0.1;
+            ambientLight.color.setHSL(0.6, 0.3, 0.7 - factor * 0.2);
+            scene.background.setHSL(0.6, 0.2, 0.8 - factor * 0.2);
+            timeDisplayLabel.textContent = 'GIORNO';
+        }
+        else if (hour >= 17 && hour < 20) { // Tramonto
+            const factor = (hour - 17 + minute/60) / 3;
+            directionalLight.intensity = 0.7 - factor * 0.4;
+            directionalLight.color.setHSL(0.05, 1, 0.5 - factor * 0.2);
+            ambientLight.intensity = 0.4 - factor * 0.1;
+            ambientLight.color.setHSL(0.05, 0.6, 0.4 - factor * 0.1);
+            scene.background.setHSL(0.05, 0.6, 0.3 - factor * 0.1);
+            timeDisplayLabel.textContent = 'TRAMONTO';
+        }
+        else { // Notte
+            directionalLight.intensity = 0.1;
+            directionalLight.color.setHSL(0.7, 0.8, 0.3);
+            ambientLight.intensity = 0.1;
+            ambientLight.color.setHSL(0.7, 0.5, 0.1);
+            scene.background.setHSL(0.7, 0.8, 0.05);
+            timeDisplayLabel.textContent = 'NOTTE';
+        }
+
+        // Nebbia dinamica
+        scene.fog.color.copy(directionalLight.color);
+        scene.fog.density = 0.0005 + (1 - directionalLight.intensity) * 0.0005;
     }
     
     function toggleNightVision() {
@@ -3081,63 +3284,83 @@
       }
     }
 
+    function getProjectile() {
+        const projectileGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+        const projectileMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
+        scene.add(projectile);
+        return projectile;
+    }
+
+    function createMuzzleFlash(position, direction) {
+        const flashLight = new THREE.PointLight(0xffa500, 10, 20, 2);
+        flashLight.position.copy(position).add(direction.clone().multiplyScalar(4));
+        scene.add(flashLight);
+
+        const flashMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(1, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.8 })
+        );
+        flashMesh.position.copy(flashLight.position);
+        scene.add(flashMesh);
+
+        setTimeout(() => {
+            scene.remove(flashLight);
+            scene.remove(flashMesh);
+        }, 100);
+    }
+
     function shootDeLoreanMachineGun() {
         if (!gameState.inDeLorean) return;
 
-        const weaponData = gameState.deloreanWeapons.machineGun;
-        const currentTime = performance.now();
+        const weapon = gameState.deloreanWeapons.machineGun;
+        const now = performance.now();
 
-        if (currentTime - weaponData.lastShotTime < weaponData.fireRate * 1000) {
+        if (now - weapon.lastShotTime < weapon.fireRate * 1000) return;
+        if (weapon.ammo <= 0) {
+            showMessage("MUNIZIONI ESAURITE!", 1000);
             return;
         }
 
-        if (weaponData.ammo <= 0 || weaponData.isShooting) {
-            showMessage("MUNIZIONI MITRAGLIATRICE SCARICHE!", 1000);
-            return;
-        }
-
-        weaponData.ammo--;
+        weapon.ammo--;
+        weapon.lastShotTime = now;
         updateDeLoreanDashboardUI();
-        weaponData.lastShotTime = currentTime;
 
-        // Effetto flash alla volata
-        if (weaponData.muzzleFlashLight && weaponData.muzzleFlashMesh) {
-            weaponData.muzzleFlashLight.intensity = 5.0; // Accendi la luce
-            weaponData.muzzleFlashMesh.material.opacity = 1.0; // Rendi visibile la mesh
+        // Effetto flash
+        if (weapon.muzzleFlashMesh) {
+            weapon.muzzleFlashMesh.material.opacity = 1;
+            weapon.muzzleFlashMesh.material.color.setHex(0xffaa00);
             setTimeout(() => {
-                weaponData.muzzleFlashLight.intensity = 0; // Spegni la luce
-                weaponData.muzzleFlashMesh.material.opacity = 0; // Nascondi la mesh
-            }, 50); // Flash molto breve
+                weapon.muzzleFlashMesh.material.opacity = 0;
+            }, 50);
         }
 
-        const numProjectiles = 5;
-        const spreadAngle = 0.2;
+        // Creazione proiettili
+        for (let i = 0; i < 5; i++) { // Multiple projectiles per shot
+            const projectile = getProjectile();
+            if (!projectile) continue;
 
-        for (let i = 0; i < numProjectiles; i++) {
-            const projectileGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-            const projectileMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
-            const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
-
-            const deloreanForward = new THREE.Vector3(0, 0, -1).applyQuaternion(deloreanGroup.quaternion);
-            projectile.position.copy(deloreanGroup.position).add(deloreanForward.multiplyScalar(4));
+            projectile.position.copy(deloreanGroup.position);
             projectile.position.y += 1.5;
-
-            const shootDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(deloreanGroup.quaternion);
-
-            const angleX = (Math.random() - 0.5) * spreadAngle;
-            const angleY = (Math.random() - 0.5) * spreadAngle;
             
-            const tempQuaternion = new THREE.Quaternion();
-            tempQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angleX);
-            shootDirection.applyQuaternion(tempQuaternion);
+            const direction = new THREE.Vector3(0, 0, -1)
+                .applyQuaternion(deloreanGroup.quaternion)
+                .add(new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.2,
+                    (Math.random() - 0.5) * 0.2,
+                    0
+                ))
+                .normalize();
             
-            tempQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), angleY);
-            shootDirection.applyQuaternion(tempQuaternion);
+            projectile.userData.velocity = direction.multiplyScalar(100);
+            projectile.userData.damage = weapon.damage;
 
-            projectile.userData.velocity = shootDirection.multiplyScalar(70);
-            projectile.userData.damage = weaponData.damage;
+            // Aspetto proiettile
+            projectile.scale.set(0.5, 0.5, 0.5);
+            projectile.material.color.setHex(0xffcc00);
+            projectile.material.emissive.setHex(0xffcc00);
+            projectile.material.emissiveIntensity = 0.8;
             
-            scene.add(projectile);
             gameState.projectiles.push(projectile);
         }
     }
@@ -3145,44 +3368,49 @@
     function shootDeLoreanCannon() {
         if (!gameState.inDeLorean) return;
 
-        const weaponData = gameState.deloreanWeapons.cannon;
-        const currentTime = performance.now();
+        const weapon = gameState.deloreanWeapons.cannon;
+        const now = performance.now();
 
-        if (currentTime - weaponData.lastShotTime < weaponData.fireRate * 1000) {
+        if (now - weapon.lastShotTime < weapon.fireRate * 1000) return;
+        if (weapon.ammo <= 0) {
+            showMessage("MUNIZIONI ESAURITE!", 1000);
             return;
         }
 
-        if (weaponData.ammo <= 0 || weaponData.isShooting) {
-            showMessage("MUNIZIONI CANNONE SCARICHE!", 1000);
-            return;
-        }
-
-        weaponData.ammo--;
+        weapon.ammo--;
+        weapon.lastShotTime = now;
         updateDeLoreanDashboardUI();
-        weaponData.lastShotTime = currentTime;
 
-        // Effetto distorsione atmosferica quando il cannone spara
+        // Effetto schermo
         gameState.isDistorted = true;
-        gameState.distortionTimer = 0.2; // Breve durata per l'effetto
-        if (distortionOverlay) {
-            distortionOverlay.style.display = 'block';
-            distortionOverlay.classList.add('active');
-        }
+        gameState.distortionTimer = 0.5;
+        distortionOverlay.style.display = 'block';
+        distortionOverlay.classList.add('active');
 
-        const projectileGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-        const projectileMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff, emissive: 0xff00ff, emissiveIntensity: 0.8 });
-        const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
+        // Creazione proiettile
+        const projectile = getProjectile();
+        if (!projectile) return;
 
-        const deloreanForward = new THREE.Vector3(0, 0, -1).applyQuaternion(deloreanGroup.quaternion);
-        projectile.position.copy(deloreanGroup.position).add(deloreanForward.multiplyScalar(4));
+        projectile.position.copy(deloreanGroup.position);
         projectile.position.y += 1.5;
 
-        const shootDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(deloreanGroup.quaternion);
-        projectile.userData.velocity = shootDirection.multiplyScalar(40);
-        projectile.userData.damage = weaponData.damage;
+        const direction = new THREE.Vector3(0, 0, -1)
+            .applyQuaternion(deloreanGroup.quaternion)
+            .normalize();
+
+        projectile.userData.velocity = direction.multiplyScalar(50);
+        projectile.userData.damage = weapon.damage;
         projectile.userData.isCannonBall = true;
         
-        scene.add(projectile);
+        // Aspetto proiettile
+        projectile.scale.set(3, 3, 3);
+        projectile.material.color.setHex(0xff0000);
+        projectile.material.emissive.setHex(0xff0000);
+        projectile.material.emissiveIntensity = 1.0;
+
+        // Effetto particelle
+        createMuzzleFlash(deloreanGroup.position, direction);
+
         gameState.projectiles.push(projectile);
     }
 
@@ -3693,29 +3921,41 @@
     function updateWeatherLogic(currentDay) {
         if (gameState.isCloudStormActive) return;
 
-        if (currentDay > gameState.lastWeatherChangeDay) {
-            if (currentDay % 30 === 0) {
-                if (((currentDay / 30) % 2) === 1) {
-                    applyWeather('snowstorm');
-                    showMessage("UNA TEMPESTA DI NEVE SI STA AVVICINANDO!", 3000);
-                    setObjective("Raggiungi il rifugio prima della tempesta!", "reach_shelter");
-                } else {
-                    applyWeather('sandstorm');
-                    showMessage("UNA TEMPESTA DI SABBIA SI STA AVVICINANDO!", 3000);
-                    setObjective("Raggiungi il rifugio prima della tempesta!", "reach_shelter");
-                }
-            } else if (currentDay % 10 === 0) {
-                applyWeather('thunderstorm');
-                showMessage("UN TEMPORALE SI STA AVVICINANDO!", 3000);
-                setObjective("Attiva il Faro per disperdere la tempesta!", "activate_lighthouse");
-            } else {
-                if (gameState.currentWeather !== 'clear' && gameState.weatherTimer <= 0) {
-                     applyWeather('clear');
-                     showMessage("IL TEMPO E' MIGLIORATO!", 2000);
-                     clearObjective();
-                }
-            }
+        // Cambia tempo ogni 5 giorni
+        if (currentDay > gameState.lastWeatherChangeDay + 5) {
             gameState.lastWeatherChangeDay = currentDay;
+
+            const weatherTypes = ['clear', 'thunderstorm', 'snowstorm', 'sandstorm'];
+            const weights = [0.6, 0.2, 0.1, 0.1];
+
+            // Aumenta probabilità di tempeste nei giorni successivi
+            if (currentDay > 10) weights[1] += 0.1;
+            if (currentDay > 20) weights[2] += 0.1;
+            if (currentDay > 30) weights[3] += 0.1;
+
+            const totalWeight = weights.reduce((a, b) => a + b, 0);
+            let random = Math.random() * totalWeight;
+            let selectedWeather = 'clear';
+
+            for (let i = 0; i < weatherTypes.length; i++) {
+                if (random < weights[i]) {
+                    selectedWeather = weatherTypes[i];
+                    break;
+                }
+                random -= weights[i];
+            }
+
+            applyWeather(selectedWeather);
+
+            // Imposta obiettivi basati sul tempo
+            if (selectedWeather !== 'clear') {
+                setObjective(
+                    selectedWeather === 'thunderstorm' ? "Attiva il faro per calmare la tempesta!" :
+                    selectedWeather === 'snowstorm' ? "Trova riparo dalla tormenta!" :
+                    "Proteggiti dalla tempesta di sabbia!",
+                    "weather_survival"
+                );
+            }
         }
     }
 
@@ -4362,11 +4602,32 @@
       renderer.render(scene, camera);
     }
 
-    function applyAOEDamage(center, radius, damage) {
-        // Damage player if in range
+    function applyAOEDamage(position, radius, damage) {
+        // Effetto visivo
+        createShockwave(position, radius);
+
+        // Applica danno a zombie
+        gameState.zombies.forEach(zombie => {
+            const distance = zombie.mesh.position.distanceTo(position);
+            if (distance <= radius) {
+                const damageFactor = 1 - (distance / radius);
+                zombieHit(zombie, damage * damageFactor);
+            }
+        });
+
+        // Danno a rocce
+        gameState.destructibleRocks.forEach(rock => {
+            if (rock.position.distanceTo(position) <= radius) {
+                rockHit(rock, damage * 0.5);
+            }
+        });
+
+        // Danno al giocatore o alla DeLorean
         if (!gameState.inDeLorean) {
-            if (camera.position.distanceTo(center) < radius) {
-                gameState.playerHealth = Math.max(0, gameState.playerHealth - damage);
+            const playerDistance = camera.position.distanceTo(position);
+            if (playerDistance <= radius) {
+                const damageFactor = 1 - (playerDistance / radius);
+                gameState.playerHealth = Math.max(0, gameState.playerHealth - damage * damageFactor * 0.5);
                 updateUI();
                 showHitEffect();
                 if (gameState.playerHealth <= 0) {
@@ -4375,8 +4636,8 @@
             }
         } else {
             // Damage DeLorean if in range
-            if (deloreanGroup.position.distanceTo(center) < radius) {
-                gameState.deloreanFuel = Math.max(0, gameState.deloreanFuel - damage / 5); // Reduce fuel as damage
+            if (deloreanGroup.position.distanceTo(position) < radius) {
+                gameState.deloreanFuel = Math.max(0, gameState.deloreanFuel - (damage / 5)); // Reduce fuel as damage
                 updateDeLoreanDashboardUI();
                 showMessage("DELOREAN COLPITA DALL'ESPLOSIONE!", 500);
                 if (gameState.deloreanFuel <= 0 && !gameState.deloreanIsVulnerable) {
@@ -4387,22 +4648,74 @@
                 }
             }
         }
+    }
 
-        gameState.zombies.forEach(zombie => {
-            if (zombie.mesh.position.distanceTo(center) < radius) {
-                zombieHit(zombie, damage);
-            }
+    function createShockwave(position, radius) {
+        const geometry = new THREE.RingGeometry(0.1, radius, 32);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0xff4500,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.8
         });
+
+        const ring = new THREE.Mesh(geometry, material);
+        ring.position.copy(position);
+        ring.position.y = terrain.position.y + 0.1;
+        ring.rotation.x = -Math.PI / 2;
+        scene.add(ring);
+
+        // Animazione
+        let scale = 0.1;
+        const animate = () => {
+            scale += 0.1;
+            ring.scale.set(scale, scale, scale);
+            ring.material.opacity -= 0.02;
+
+            if (ring.material.opacity > 0) {
+                requestAnimationFrame(animate);
+            } else {
+                scene.remove(ring);
+            }
+        };
+        animate();
     }
 
     function applyGelatinousEffect(mesh) {
-        const gelatinousMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00ff00, // Greenish, jelly-like
+        const originalMaterial = mesh.material.clone();
+        const jellyMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00ffff,
             transparent: true,
             opacity: 0.7,
-            blending: THREE.AdditiveBlending
+            roughness: 0.1,
+            metalness: 0.9,
+            emissive: 0x00ffff,
+            emissiveIntensity: 0.5
         });
-        mesh.material = gelatinousMaterial;
+
+        mesh.material = jellyMaterial;
+
+        // Animazione gelatinosa
+        const originalScale = mesh.scale.clone();
+        let time = 0;
+
+        const animate = () => {
+            if (!gameState.deloreanIsVulnerable) {
+                mesh.material = originalMaterial;
+                mesh.scale.copy(originalScale);
+                return;
+            }
+
+            time += 0.1;
+            const pulse = Math.sin(time) * 0.05;
+
+            mesh.scale.x = originalScale.x + pulse;
+            mesh.scale.y = originalScale.y - pulse * 0.5;
+            mesh.scale.z = originalScale.z + pulse;
+
+            requestAnimationFrame(animate);
+        };
+        animate();
     }
 
     function removeGelatinousEffect(mesh) {
