@@ -3,8 +3,8 @@ import gameState from './gameState.js';
 import * as globals from './globals.js';
 import { showMessage, updateAllInteractableMeshes, applyAOEDamage } from './utils.js';
 import { updateUI, updateVehicleDashboardUI } from './ui.js';
-import { createAtomicMushroom } from './effects.js';
-import { gameOver } from './main.js';
+import { createAtomicMushroom, showHitEffect } from './effects.js';
+import { gameOver } from './gameLogic.js';
 
 export function spawnPowerUp(position, type = null) {
     const randomType = Math.random();
