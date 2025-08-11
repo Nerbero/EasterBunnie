@@ -1,0 +1,31 @@
+export let scene, camera, renderer, controls, clock, allInteractableMeshes, terrain, water, treesGroup, rocksGroup, cloudsGroup, mountainsGroup, directionalLight, ambientLight, rainParticles, snowParticles, sandParticles, currentTime, isTouchDevice, vehicleGroup, vehicleLight, originalCameraParent, originalCameraPosition, vehicleLastPosition, lastTouchX_camera, lastTouchY_camera, isLookingWithTouch, radarCanvas, radarCtx;
+
+export function setScene(s) { scene = s; }
+export function setCamera(c) { camera = c; }
+export function setRenderer(r) { renderer = r; }
+export function setControls(c) { controls = c; }
+export function setClock(c) { clock = c; }
+export function setAllInteractableMeshes(a) { allInteractableMeshes = a; }
+export function setTerrain(t) { terrain = t; }
+export function setWater(w) { water = w; }
+export function setTreesGroup(t) { treesGroup = t; }
+export function setRocksGroup(r) { rocksGroup = r; }
+export function setCloudsGroup(c) { cloudsGroup = c; }
+export function setMountainsGroup(m) { mountainsGroup = m; }
+export function setDirectionalLight(d) { directionalLight = d; }
+export function setAmbientLight(a) { ambientLight = a; }
+export function setRainParticles(r) { rainParticles = r; }
+export function setSnowParticles(s) { snowParticles = s; }
+export function setSandParticles(s) { sandParticles = s; }
+export function setCurrentTime(t) { currentTime = t; }
+export function setIsTouchDevice(i) { isTouchDevice = i; }
+export function setVehicleGroup(v) { vehicleGroup = v; }
+export function setVehicleLight(v) { vehicleLight = v; }
+export function setOriginalCameraParent(o) { originalCameraParent = o; }
+export function setOriginalCameraPosition(o) { originalCameraPosition = o; }
+export function setVehicleLastPosition(v) { vehicleLastPosition = v; }
+export function setLastTouchX_camera(l) { lastTouchX_camera = l; }
+export function setLastTouchY_camera(l) { lastTouchY_camera = l; }
+export function setIsLookingWithTouch(i) { isLookingWithTouch = i; }
+export function setRadarCanvas(r) { radarCanvas = r; }
+export function setRadarCtx(r) { radarCtx = r; }

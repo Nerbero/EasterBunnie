@@ -1,0 +1,860 @@
+* {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      color: white;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 24px;
+      height: 24px;
+      margin: -12px 0 0 -12px;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      pointer-events: none;
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.7);
+      z-index: 10;
+      transition: all 0.1s ease;
+      display: none;
+    }
+
+    #crosshair.target-locked {
+      border-color: #ff5555;
+      box-shadow: 0 0 12px rgba(255, 0, 0, 0.9);
+      transform: scale(1.2);
+    }
+
+    #uiContainer {
+      position: absolute;
+      bottom: 20px;
+      left: 240px;
+      top: auto;
+      width: auto;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      z-index: 5;
+      pointer-events: none;
+      display: none;
+    }
+
+    .ui-panel {
+      background: rgba(0, 0, 0, 0.6);
+      padding: 12px 20px;
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.3s ease;
+    }
+
+    .ui-panel:hover {
+      transform: translateY(-5px);
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+    }
+
+    .stat .label {
+      color: #aaa;
+      min-width: 80px;
+    }
+
+    .stat .value {
+      font-weight: bold;
+      min-width: 60px;
+    }
+
+    #health .value {
+      color: #ff5555;
+    }
+
+    #ammo .value {
+      color: #55ff55;
+    }
+
+    #score .value {
+      color: #ffcc00;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      margin-top: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    #healthBar .progress-fill {
+      background: linear-gradient(90deg, #ff5555, #ff0000);
+    }
+
+    #ammoBar .progress-fill {
+      background: linear-gradient(90deg, #55ff55, #00ff00);
+    }
+
+    #startScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(20, 20, 40, 0.9) 0%, rgba(10, 10, 30, 0.95) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 20;
+      color: white;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      animation: fadeIn 1s forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    #startScreen h1 {
+      font-size: 4.5rem;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(to right, #ff5555, #ffaa00);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      animation: pulse 2s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); text-shadow: 0 0 10px rgba(255, 85, 85, 0.5); }
+      100% { transform: scale(1.05); text-shadow: 0 0 20px rgba(255, 85, 85, 0.8); }
+    }
+
+    #startScreen p {
+      font-size: 1.5rem;
+      max-width: 700px;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+      color: #ddd;
+      animation: slideIn 1s 0.5s forwards;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    @keyframes slideIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #startButton {
+      background: linear-gradient(145deg, #4CAF50, #2E8B57);
+      border: none;
+      color: white;
+      padding: 18px 45px;
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-top: 30px;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      position: relative;
+      overflow: hidden;
+      animation: buttonFloat 3s infinite ease-in-out;
+    }
+
+    @keyframes buttonFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    #startButton::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
+    }
+
+    #startButton:hover {
+      background: linear-gradient(145deg, #45a049, #2d7a4f);
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    #startButton:hover::before {
+      left: 100%;
+    }
+
+    #gameOverScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(40, 10, 10, 0.9) 0%, rgba(30, 5, 5, 0.95) 100%);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 25;
+      color: white;
+      opacity: 0;
+      animation: fadeIn 1s forwards;
+    }
+
+    #gameOverScreen h2 {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      color: #ff5555;
+      text-transform: uppercase;
+      text-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+    }
+
+    #finalScore {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      color: #ffcc00;
+      text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+    }
+
+    #restartButton {
+      background: linear-gradient(145deg, #4CAF50, #2E8B57);
+      border: none;
+      color: white;
+      padding: 18px 45px;
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-top: 20px;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      letter-spacing: 1px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      text-transform: uppercase;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #restartButton::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
+    }
+
+    #restartButton:hover {
+      background: linear-gradient(145deg, #45a049, #2d7a4f);
+      transform: translateY(-5px);
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    #restartButton:hover::before {
+      left: 100%;
+    }
+
+    #message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 20px 40px;
+      border-radius: 10px;
+      font-size: 2rem;
+      text-align: center;
+      display: none;
+      z-index: 15;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+      animation: pulse 2s infinite;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .instructions {
+      /* Removed from display */
+      display: none;
+    }
+
+    .key {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 3px 6px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-weight: bold;
+      margin: 0 3px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .hit-effect {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 0, 0, 0.3);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 9;
+    }
+
+    .hit-animation {
+      animation: hitFlash 0.3s ease;
+    }
+
+    @keyframes hitFlash {
+      0% { opacity: 0.7; }
+      100% { opacity: 0; }
+    }
+
+    #nightVisionOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(0, 255, 0, 0.1), rgba(0, 0, 0, 0.8));
+      z-index: 4;
+      pointer-events: none;
+      display: none;
+      opacity: 0.7;
+      background: rgba(0, 50, 0, 0.7);
+      filter: sepia(1) hue-rotate(90deg) saturate(300%) brightness(1.2);
+      transition: opacity 0.3s ease, background 0.3s ease, filter 0.3s ease;
+    }
+
+    .zombie-counter {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 1.2rem;
+      text-align: center;
+      z-index: 5;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 0, 0, 0.5);
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+      display: none;
+    }
+
+    .zombie-counter span {
+      color: #ff5555;
+      font-weight: bold;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @media (max-width: 768px) {
+      #startScreen h1 {
+        font-size: 2.5rem;
+      }
+
+      #startScreen p {
+        font-size: 1.1rem;
+      }
+
+      .ui-panel {
+        padding: 8px 15px;
+      }
+
+      .stat {
+        font-size: 14px;
+      }
+    }
+
+    #time-display {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        top: auto;
+        left: auto;
+        z-index: 20;
+        text-align: center;
+        padding: 15px 25px;
+        pointer-events: none;
+        background: rgba(10, 25, 47, 0.85);
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(64, 224, 208, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        display: none;
+    }
+
+    .time {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #ffb74d;
+        margin-bottom: 5px;
+        text-shadow: 0 0 10px rgba(255, 183, 77, 0.5);
+    }
+
+    .time-label {
+        font-size: 1.1rem;
+        color: #ffe0b2;
+    }
+
+    #weaponDisplay {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        z-index: 20;
+        text-align: left;
+        padding: 15px 25px;
+        pointer-events: none;
+        background: rgba(10, 25, 47, 0.85);
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(64, 224, 208, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        display: none;
+    }
+
+    #weaponName {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #00e676;
+        margin-bottom: 5px;
+    }
+
+    #weaponAmmo {
+        font-size: 1.2rem;
+        color: #a7ffeb;
+    }
+
+    #touchControls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        z-index: 100;
+        pointer-events: none;
+        opacity: 0.4;
+    }
+
+    .touch-button {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        width: 100px;
+        height: 100px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 35px;
+        color: white;
+        text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        user-select: none;
+        pointer-events: auto;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        transition: background 0.1s ease, transform 0.1s ease;
+    }
+
+    .touch-button:active {
+        background: rgba(255, 255, 255, 0.5);
+        transform: scale(0.95);
+    }
+
+    #joystickContainer {
+        position: absolute;
+        bottom: 15vh;
+        left: 8vw;
+        width: 187.5px;
+        height: 187.5px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: auto;
+        touch-action: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #joystickContainer.sprint-active {
+        border-color: rgba(0, 255, 0, 0.6);
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+    }
+
+    #joystickHandle {
+        width: 112.5px;
+        height: 112.5px;
+        background: rgba(255, 255, 255, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        transform: translate(0, 0);
+        transition: transform 0.05s ease-out;
+    }
+
+    #shootButton {
+        bottom: 15vh;
+        right: 8vw;
+        width: 130px;
+        height: 130px;
+        font-size: 45px;
+        background: rgba(255, 0, 0, 0.4);
+        border-color: rgba(255, 0, 0, 0.6);
+    }
+
+    #jumpButton {
+        bottom: 30vh;
+        right: 8vw;
+    }
+
+    #reloadButton {
+        bottom: 45vh;
+        right: 8vw;
+    }
+
+    #nightVisionButton {
+        top: 15vh;
+        right: 15vw;
+        width: 70px;
+        height: 70px;
+        font-size: 28px;
+        border-radius: 10px;
+    }
+
+    #switchWeaponButton {
+        top: 15vh;
+        right: 25vw;
+        width: 70px;
+        height: 70px;
+        font-size: 28px;
+        border-radius: 10px;
+    }
+
+    .touch-button i {
+        font-size: 1.5em;
+    }
+
+    #watermark {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 0.8em;
+      z-index: 10;
+      pointer-events: none;
+      display: block;
+    }
+
+    #distortionOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 255, 255, 0.1);
+      pointer-events: none;
+      display: none;
+      opacity: 0;
+      filter: blur(0px) hue-rotate(0deg) saturate(100%);
+      transition: opacity 0.1s ease-out, filter 0.1s ease-out;
+      z-index: 99;
+    }
+
+    #distortionOverlay.active {
+      opacity: 1;
+      filter: blur(5px) hue-rotate(180deg) saturate(200%);
+    }
+
+    #vehicleDashboard {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        top: auto;
+        width: auto;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        z-index: 5;
+        pointer-events: none;
+        display: none;
+    }
+
+    .dashboard-panel {
+      background: rgba(0, 0, 0, 0.6);
+      padding: 12px 20px;
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.3s ease;
+    }
+
+    .dashboard-panel:hover {
+      transform: translateY(-5px);
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .dash-stat {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      color: #ddd;
+    }
+
+    .dash-stat span {
+        font-weight: bold;
+        color: #fff;
+    }
+
+    #dashSpeed, #dashDistance {
+        color: #00ffff;
+    }
+
+    #dashFuel {
+        color: #ffcc00;
+    }
+
+    #dashFuelBar .progress-fill {
+        background: linear-gradient(90deg, #ffcc00, #ff8c00);
+    }
+
+    #dashHeadlightsStatus {
+        color: #ffff00;
+    }
+
+    #vehicleWeaponPanel {
+        text-align: right;
+    }
+
+    #dashWeaponName {
+        color: #ff5555;
+    }
+
+    #dashWeaponAmmo {
+        color: #ffaaaa;
+    }
+
+    .atomic-mushroom {
+        position: absolute;
+        background: radial-gradient(circle at center, rgba(255, 165, 0, 0.8) 0%, rgba(255, 0, 0, 0.5) 50%, transparent 100%);
+        border-radius: 50%;
+        animation: expandFade 1s forwards;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        z-index: 999;
+    }
+
+    @keyframes expandFade {
+        0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+    }
+
+    .electric-arc {
+        position: absolute;
+        background: linear-gradient(to bottom, #00ffff, #0000ff);
+        opacity: 0.8;
+        animation: electricArcFade 0.5s forwards;
+        pointer-events: none;
+        z-index: 998;
+    }
+
+    @keyframes electricArcFade {
+        0% { opacity: 0.8; }
+        100% { opacity: 0; }
+        }
+
+    #interactionPrompt {
+        position: absolute;
+        top: 70%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 1.2rem;
+        text-align: center;
+        display: none;
+        z-index: 15;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+
+    #radarCanvas {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        border: 2px solid rgba(0, 255, 0, 0.8);
+        border-radius: 50%;
+        background: rgba(0, 50, 0, 0.7);
+        z-index: 10;
+        display: none;
+    }
+
+    #objectiveDisplay {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.7);
+        color: #ffcc00;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        text-align: center;
+        z-index: 12;
+        display: none;
+        box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+    }
+
+    #craftingMenu {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.7);
+        display: none;
+        flex-direction: column;
+        gap: 20px;
+        z-index: 30;
+        border: 2px solid rgba(0, 255, 255, 0.5);
+    }
+
+    #craftingMenu h3 {
+        color: #00ffff;
+        font-size: 2rem;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .crafting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 255, 255, 0.2);
+    }
+
+    .crafting-item span {
+        font-size: 1.2rem;
+        color: #fff;
+    }
+
+    .crafting-button {
+        background: linear-gradient(45deg, #00bfff, #0080ff);
+        border: none;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.2s ease;
+        font-weight: bold;
+    }
+
+    .crafting-button:hover {
+        background: linear-gradient(45deg, #009acd, #0066cc);
+        transform: translateY(-2px);
+    }
+
+    .crafting-button:disabled {
+        background: #555;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    #closeCrafting {
+        background: linear-gradient(45deg, #ff4500, #dc143c);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.2s ease;
+        font-weight: bold;
+        margin-top: 20px;
+    }
+
+    #closeCrafting:hover {
+        background: linear-gradient(45deg, #cc3700, #a1102f);
+        transform: translateY(-2px);
+    }
+
+    #resourceDisplay {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        top: auto;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 10px 15px;
+        border-radius: 10px;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        display: none;
+        color: #fff;
+        font-size: 1.1rem;
+    }
